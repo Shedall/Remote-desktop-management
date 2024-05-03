@@ -6,9 +6,10 @@ import time
 import socket
 import base64
 import pyautogui
-from des import *
+#from des import *
 from my_ui_file import Ui_MainWindow
 from PyQt5 import QtCore, QtGui, QtWidgets
+import distutils
 
 
 class MyThread(QtCore.QThread):
@@ -25,7 +26,7 @@ class MyThread(QtCore.QThread):
         # Создаем TCP-Сервер
         self.server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.server.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR, 1)
-        self.server.bind(self.ip, self.port)
+        self.server.bind((self.ip, self.port))
         self.server.listen(0)
 
 
@@ -127,7 +128,7 @@ class VNCServer(QtWidgets.QMainWindow):
             self.thread_handler.command = mouse_cord
 
         #Обработка double-кликов
-        elif event.type() == QtCore.QEvent.MouseButtonDbClick:
+        elif event.type() == QtCore.QEvent.MouseButtonDblClick:
             mouse_cord = f'mouse_double_left_click {event.x()} {event.y()}'
             self.thread_handler.command = mouse_cord
         return QtWidgets.QWidget.event(self, event)
