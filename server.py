@@ -7,6 +7,7 @@ import socket
 import base64
 import pyautogui
 from des import *
+from my_ui_file import Ui_MainWindow
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
@@ -76,3 +77,64 @@ class MyThread(QtCore.QThread):
                     pass
 
 
+class VNCServer(QtWidgets.QMainWindow):
+    def __init__(self, parent=None):
+        QtWidgets.QWidget.__init__(self, parent)
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
+
+        #Создаем экземпляр обрабочтчика
+        self.ip = '127.0.0.1'
+        self.port = 4444
+        self.thread_handler = MyThread(self.ip,self.port)
+        self.thread_handler.start()
+
+        #Обработчик потока для обновления GUI
+        self.thread_handler.mysignal.connect(self.screen_handler)
+
+
+        #Обработка и вывод изображений
+    def screen_handler(self, screen_value):
+        data = ['mouse_left_click','mouse_right_click','mouse_double_left_click']
+
+        #В случае если не скрин-пропускаем шаг
+        if screen_value[0] not in data:
+            decrypt_image = base64.b64decode(screen_value[0])
+            with open('2.png', 'wb') as file:
+                file.write(decrypt_image)
+
+            #Выводим изображение в панель
+            image = QtGui.QPixmap('2.png')
+            self.ui.label.setPixmar(image)
+
+    #После закрытия сервера удаляем изщображение
+    def closeEvent(self, event):
+        for file in glob('*.png'):
+            try: os.remove(file)
+            except: pass
+
+
+    #Обработка event события
+    def event(self, event):
+        # обработкаЛКМ ПКМ
+        if event.type() == QtCore.QEvent.MouseButtonPress:
+            current_button = event.button() #Определяем нажатую кнопку
+
+            if current_button == 1:
+                mouse_cord = f'mouse_left_click {event.x()} {event.y()}'
+            elif current_button == 2:
+                mouse_cord = f'mouse_right_click {event.x()} {event.y()}'
+            self.thread_handler.command = mouse_cord
+
+        #Обработка double-кликов
+        elif event.type() == QtCore.QEvent.MouseButtonDbClick:
+            mouse_cord = f'mouse_double_left_click {event.x()} {event.y()}'
+            self.thread_handler.command = mouse_cord
+        return QtWidgets.QWidget.event(self, event)
+
+
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    myapp = VNCServer()
+    myapp.show()
+    sys.exit(app.exec_())
