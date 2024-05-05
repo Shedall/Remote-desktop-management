@@ -10,6 +10,8 @@ import pyautogui
 from my_ui_file import Ui_MainWindow
 from PyQt5 import QtCore, QtGui, QtWidgets
 import distutils
+#pyuic5 label.ui -o my_ui_file.py
+
 
 
 class MyThread(QtCore.QThread):
@@ -30,52 +32,52 @@ class MyThread(QtCore.QThread):
         self.server.listen(0)
 
 
-        #Принимаем и обрабатываем изображения
-        def run(self):
-            #Принимаем входящее соеденение
-            self.data_connection, _ = self.server.accept()
-            self.active_socket = self.data_connection
+    #Принимаем и обрабатываем изображения
+    def run(self):
+        #Принимаем входящее соеденение
+        self.data_connection, _ = self.server.accept()
+        self.active_socket = self.data_connection
 
-            while True:
-                if self.command.split(' ')[0] != 'screen':
-                    self.send_json(self.command.split(' '))
-                    response = self.receive_json()
-                    self.mysignal.emit([response])
-                    self.command = 'screen'
-                if self.command.split(' ')[0] == 'screen':
-                    self.send_json(self.command.split(' '))
-                    response = self.receive_json()
-                    self.mysignal.emit([response])
+        while True:
+            if self.command.split(' ')[0] != 'screen':
+                self.send_json(self.command.split(' '))
+                response = self.receive_json()
+                self.mysignal.emit([response])
+                self.command = 'screen'
+            if self.command.split(' ')[0] == 'screen':
+                self.send_json(self.command.split(' '))
+                response = self.receive_json()
+                self.mysignal.emit([response])
 
 
 
-        #Отправка JSON-данных клиенту
-        def send_json(self,data):
-            #Обрабатываем бинарные данные
-            try:json_data = json.dumps(data.decode('utf-8'))
-            except:json_data = json.dumps(data)
+    #Отправка JSON-данных клиенту
+    def send_json(self,data):
+        #Обрабатываем бинарные данные
+        try:json_data = json.dumps(data.decode('utf-8'))
+        except:json_data = json.dumps(data)
 
-            #Случай если клиент разорвал соеденение но сервер отправляет команды
+        #Случай если клиент разорвал соеденение но сервер отправляет команды
+        try:
+            self.active_socket.send(json_data.encode('utf-8'))
+        except ConnectionResetError:
+            #Отключаемся от текущей сессии
+            self.active_socket = None
+
+
+    #Получаем JSON-данные от клиента
+    def receive_json(self):
+        json_data = ''
+
+        while True:
             try:
-                self.active_socket.send(json_data.encode('utf-8'))
-            except ConnectionResetError:
-                #Отключаемся от текущей сессии
-                self.active_socket = None
-
-
-        #Получаем JSON-данные от клиента
-        def receive_json(self):
-            json_data = ''
-
-            while True:
-                try:
-                    if self.active_socket != None:
-                        json_data += self.active_socket.recv(1024).decode('utf-8')
-                        return json.loads(json_data)
-                    else:
-                        return None
-                except ValueError:
-                    pass
+                if self.active_socket != None:
+                    json_data += self.active_socket.recv(1024).decode('utf-8')
+                    return json.loads(json_data)
+                else:
+                    return None
+            except ValueError:
+                pass
 
 
 class VNCServer(QtWidgets.QMainWindow):
@@ -83,9 +85,11 @@ class VNCServer(QtWidgets.QMainWindow):
         QtWidgets.QWidget.__init__(self, parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        #self.ui.label.setText("Привет, мир!")
 
         #Создаем экземпляр обрабочтчика
-        self.ip = '127.0.0.1'
+        self.ip = '192.168.221.134'
+        #self.ip = '127.0.0.1'
         self.port = 4444
         self.thread_handler = MyThread(self.ip,self.port)
         self.thread_handler.start()
@@ -106,7 +110,7 @@ class VNCServer(QtWidgets.QMainWindow):
 
             #Выводим изображение в панель
             image = QtGui.QPixmap('2.png')
-            self.ui.label.setPixmar(image)
+            self.ui.label.setPixmap(image)
 
     #После закрытия сервера удаляем изщображение
     def closeEvent(self, event):

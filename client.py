@@ -22,7 +22,7 @@ class VNCClient:
     def mouse_active(self, mouse_flag, x, y):
         if mouse_flag == 'mouse_left_click':
             pyautogui.leftClick(int(x), int(y))
-            return "mouse_left_cick"
+            return "mouse_left_click"
 
         elif mouse_flag == 'mouse_right_click':
             pyautogui.rightClick(int(x), int(y))
@@ -72,6 +72,7 @@ class VNCClient:
                 return json.loads(json_data)
             except ValueError:
                 pass
+
 
 myclient = VNCClient('127.0.0.1', 4444)
 myclient.execute_handler()
